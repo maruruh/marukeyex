@@ -2,7 +2,7 @@
 	"name": "marukeyex",
 	"displayName": "MaruKeyEx",
 	"description": "日本語のキー操作を快適に",
-	"version": "0.0.2",
+	"version": "0.0.4",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
@@ -66,5 +66,6 @@
 		"@types/mocha": "^2.2.42"
 	},
 	"dependencies": {},
-	"publisher": "maruruh"
+	"publisher": "maruruh",
+	"repository": "https://github.com/maruruh/marukeyex"
 }
