@@ -335,39 +335,48 @@ function _cursorMovePos( editor: vscode.TextEditor, pos: vscode.Position )
 
 function _getCharType( ch: number ) : CharType
 {
-	// WhiteSpace
 	if( ch === 0x000a ){							// \n
 		return CharType.NewLine;
 	}
 	else if( ch === 0x0020							// ' '
 	 		|| ( 0x0009 <= ch && ch <= 0x000d )		// \t, \v, \f, \r
-			|| ch === 0x00a0 || ch === 0x1680 || ch === 0x180e || ( 0x2000 <= ch && ch <= 0x200a )
-			|| ch === 0x2028 || ch === 0x2029 || ch === 0x202f || ch === 0x205f || ch === 0x3000 || ch === 0xfeff ){
+			|| ch === 0x00a0 || ch === 0x1680 || ch === 0x180e
+			|| ( 0x2000 <= ch && ch <= 0x200a )
+			|| ch === 0x2028 || ch === 0x2029 || ch === 0x202f
+			|| ch === 0x205f || ch === 0x3000 || ch === 0xfeff ){
 		return CharType.WhiteSpace;
 	}
 	else if( ( 0x0030 <= ch && ch <= 0x0039 )		// 0 - 9
 			|| ch === 0x005f						// _
 			|| ( 0x0041 <= ch && ch <= 0x005a )		// A - Z
 			|| ( 0x0061 <= ch && ch <= 0x007a )		// a - z
-			|| ( 0xff10 <= ch && ch <= 0xff5a )		// ０ - ｚ
+			|| ( 0xff10 <= ch && ch <= 0xff19 )		// ０ - ９
+			|| ( 0xff21 <= ch && ch <= 0xff3a )		// Ａ - Ｚ
+			|| ( 0xff41 <= ch && ch <= 0xff5a )		// ａ - ｚ
 			|| ch === 0xff3f						// ＿
 			|| ( 0x0391 <= ch && ch <= 0x044f )		// Α - я
 	){
 		return CharType.AlphabetNumber;
 	}
-	else if( ( 0x0000 <= ch && ch <= 0x007e )		// 他ASCIIコード
-			|| ch === 0x203e						// ‾
-			|| ( 0x2500 <= ch && ch <= 0x2542 )		// ─ - ╂
+	else if( ( 0x3040 <= ch && ch <= 0x309f )		// 平仮名
+			|| ch === 0xff5e							// ～
 	){
-		return CharType.Punctuation;
-	}
-	else if( ( 0x3041 <= ch && ch <= 0x3093 ) ){	// ぁ - ん
 		return CharType.Hiragana;
 	}
-	else if( ( 0x30a1 <= ch && ch <= 0x30f6 )		// ァ - ヶ
-			|| ( 0xff66 <= ch && ch <= 0xFF9F )		// ヲ - ゜
+	else if( ( 0x30a0 <= ch && ch <= 0x30ff )		// 片仮名
+			|| ( 0x31f0 <= ch && ch <= 0x31ff )		// 片仮名拡張
+			|| ( 0xff66 <= ch && ch <= 0xFF9F )		// 半角片仮名
+			|| ch === 0x30fc							// ー
 	){
 		return CharType.Katakana;
+	}
+	else if( ( 0x0000 <= ch && ch <= 0x007f )		// 他ASCIIコード
+			|| ( 0xff00 <= ch && ch <= 0xff65 )		// 他ASCIIコード全角
+			|| ch === 0x203e						// ‾
+			|| ( 0x2460 <= ch && ch <= 0x24ff )		// 囲み英数字
+			|| ( 0x2200 <= ch && ch <= 0x23ff )		// 数学記号（演算子） & その他の技術用記号
+	){
+		return CharType.Punctuation;
 	}
 	
 	return CharType.Other;

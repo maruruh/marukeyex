@@ -2,7 +2,7 @@
 	"name": "marukeyex",
 	"displayName": "MaruKeyEx",
 	"description": "日本語のキー操作を快適に",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
