@@ -1,9 +1,36 @@
 # Change Log
 
-All notable changes to the "marukeyex" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
 ## [Unreleased]
 
-- Initial release
+## 0.1.0
+
+### Changeed
+
+- 単語移動時、行を跨ぐ場合には行末でストップするようにした。
+- 単語削除時、カーソルが空白位置にある場合は空白だけを削除するようにした。
+- 複数選択カーソル対応。
+
+### Added
+- `deleteLine`を追加。標準機能と異なり、ファイル末尾で実行した場合に前の行の削除になりません。
+
+## 0.0.5
+
+### Changed
+- `ー`は片仮名、`～`は平仮名扱いに。
+- 全角ASCII記号の扱いも半角ASCII記号と同じに。
+
+### Fixed
+- 文字コードの判定精度向上。
+
+## 0.0.4
+
+### Fixed
+- `enter`か改行時に文頭の記号を拾ってしまったりインデントがおかしかったりしたのを修正。
+
+## 0.0.1
+- テストリリース
+
+
+
+
+

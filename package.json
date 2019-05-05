@@ -2,7 +2,7 @@
 	"name": "marukeyex",
 	"displayName": "MaruKeyEx",
 	"description": "日本語のキー操作を快適に",
-	"version": "0.0.6",
+	"version": "0.1.0",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
@@ -16,7 +16,8 @@
 		"onCommand:marukeyex.cursorLeftWordEnd",
 		"onCommand:marukeyex.deleteRightWord",
 		"onCommand:marukeyex.copyWord",
-		"onCommand:marukeyex.enter"
+		"onCommand:marukeyex.enter",
+		"onCommand:marukeyex.deleteLine"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -48,6 +49,10 @@
 			{
 				"command": "marukeyex.enter",
 				"title": "enter"
+			},
+			{
+				"command": "marukeyex.deleteLine",
+				"title": "deleteLine"
 			}
 		]
 	},

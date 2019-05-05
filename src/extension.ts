@@ -28,6 +28,9 @@ export function activate( context: vscode.ExtensionContext )
 	disposables.push( vscode.commands.registerTextEditorCommand( 'marukeyex.enter', ( textEditor, edit ) => {
 		_commandEnter( textEditor, edit );
 	} ) );
+	disposables.push( vscode.commands.registerTextEditorCommand( 'marukeyex.deleteLine', ( textEditor, edit ) => {
+		_commandDeleteLine( textEditor, edit );
+	} ) );
 	
 	context.subscriptions.concat( disposables );
 }
@@ -36,60 +39,110 @@ export function deactivate() {}
 
 function _commandCursorRightWordStart( editor : vscode.TextEditor, edit : vscode.TextEditorEdit )
 {
-	let pos = _findRightWordPosInEditor( editor, editor.selection.active, false );
-	_cursorMovePos( editor, pos );
+	editor.selections	= editor.selections.map( s => {
+		let pos = _findRightWordPosInEditor( editor, s.active, false );
+		
+		if( s.isEmpty ){
+			return new vscode.Selection( pos, pos );
+		}
+		else {
+			return new vscode.Selection( s.anchor, pos );
+		}
+	} );
+	
+	if( editor.selections.length === 1 ){
+		editor.revealRange( editor.selection );
+	}
 }
 
 export function _commandCursorRightWordEnd( editor : vscode.TextEditor, edit : vscode.TextEditorEdit )
 {
-	let pos = _findRightWordPosInEditor( editor, editor.selection.active, true );
-	_cursorMovePos( editor, pos );
+	editor.selections	= editor.selections.map( s => {
+		let pos = _findRightWordPosInEditor( editor, s.active, true );
+		
+		if( s.isEmpty ){
+			return new vscode.Selection( pos, pos );
+		}
+		else {
+			return new vscode.Selection( s.anchor, pos );
+		}
+	} );
+	
+	if( editor.selections.length === 1 ){
+		editor.revealRange( editor.selection );
+	}
 }
 
 function _commandCursorLeftWordStart( editor : vscode.TextEditor, edit : vscode.TextEditorEdit )
 {
-	let pos = _findLeftWordPosInEditor( editor, editor.selection.active, false );
-	_cursorMovePos( editor, pos );
+	editor.selections	= editor.selections.map( s => {
+		let pos = _findLeftWordPosInEditor( editor, s.active, false );
+		
+		if( s.isEmpty ){
+			return new vscode.Selection( pos, pos );
+		}
+		else {
+			return new vscode.Selection( s.anchor, pos );
+		}
+	} );
+	
+	if( editor.selections.length === 1 ){
+		editor.revealRange( editor.selection );
+	}
 }
 
 function _commandCursorLeftWordEnd( editor : vscode.TextEditor, edit : vscode.TextEditorEdit )
 {
-	let pos = _findLeftWordPosInEditor( editor, editor.selection.active, true );
-	_cursorMovePos( editor, pos );
+	editor.selections	= editor.selections.map( s => {
+		let pos = _findLeftWordPosInEditor( editor, s.active, true );
+		
+		if( s.isEmpty ){
+			return new vscode.Selection( pos, pos );
+		}
+		else {
+			return new vscode.Selection( s.anchor, pos );
+		}
+	} );
+	
+	if( editor.selections.length === 1 ){
+		editor.revealRange( editor.selection );
+	}
 }
 
 function _commandDeleteRightWord( editor : vscode.TextEditor, edit : vscode.TextEditorEdit )
 {
-	let lineCnt = editor.document.lineCount;
-	let pos = editor.selection.active;
-	let lineText = editor.document.lineAt( pos );
-	
-	// 行末は改行を除去
-	if( pos.character === lineText.range.end.character ){
-		// ファイル終端
-		if( pos.line + 1 >= lineCnt ){
-			return;
-		}
+	editor.edit( e => {
+		let lineCnt = editor.document.lineCount;
 		
-		pos = new vscode.Position( pos.line + 1, 0 );
-	}
-	else {
-		let characterPos = pos.character;
-		let type = _getCharTypeAt( lineText.text, characterPos );
-		
-		if( _checkSkipCursorMoveChar( type ) ){
-			characterPos	= _skipRightWhiteSpaceAndPunctuation( lineText.text, characterPos );
+		for( let selection of editor.selections ){
+			let pos = selection.active;
+			let lineText = editor.document.lineAt( pos );
+			
+			// 行末は改行を除去
+			if( pos.character === lineText.range.end.character ){
+				// ファイル終端
+				if( pos.line + 1 >= lineCnt ){
+					return;
+				}
+				
+				pos = new vscode.Position( pos.line + 1, 0 );
+			}
+			else {
+				let characterPos = pos.character;
+				let type = _getCharTypeAt( lineText.text, characterPos );
+				
+				characterPos	= _skipRightCurrentWordType( lineText.text, characterPos );
+				
+				pos	= new vscode.Position( pos.line, characterPos );
+			}
+			
+			e.delete( new vscode.Range( selection.anchor, pos ) );
 		}
-		else {
-			characterPos	= _skipRightCurrentWordType( lineText.text, characterPos );
+	} ).then( () => {
+		if( editor.selections.length === 1 ){
+			_cursorMovePos( editor, editor.selection.anchor );
 		}
-		
-		pos	= new vscode.Position( pos.line, characterPos );
-	}
-	
-	edit.delete( new vscode.Range( editor.selection.anchor, pos ) );
-	
-	_cursorMovePos( editor, editor.selection.anchor );
+	} );
 }
 
 function _commandCopyWord( editor : vscode.TextEditor, edit : vscode.TextEditorEdit )
@@ -105,25 +158,51 @@ function _commandCopyWord( editor : vscode.TextEditor, edit : vscode.TextEditorE
 	
 	vscode.env.clipboard.writeText( str );
 	
-	vscode.window.setStatusBarMessage( "Copied word.", 1000 );
+	vscode.window.setStatusBarMessage( "Copied word: " + str, 1000 );
 }
 
 function _commandEnter( editor : vscode.TextEditor, edit : vscode.TextEditorEdit )
 {
 	vscode.commands.executeCommand( "lineBreakInsert" ).then( () => {
-		let pos = editor.selection.active;
-		let lineText = editor.document.lineAt( pos.line + 1 );
-		
-		let chIdx = _findRightWordPos( lineText.text, 0, CharType.WhiteSpace as number );
-		
-		pos	= new vscode.Position( pos.line + 1, chIdx );
-		
-		editor.selection	= new vscode.Selection( pos, pos );
+		editor.selections	= editor.selections.map( s => {
+			let pos = s.active;
+			let lineText = editor.document.lineAt( pos.line + 1 );
+			
+			let chIdx = _findRightWordPos( lineText.text, 0, CharType.WhiteSpace as number );
+			
+			pos	= new vscode.Position( pos.line + 1, chIdx );
+			
+			return new vscode.Selection( pos, pos );
+		} );
 		
 		if( editor.selections.length === 1 ){
 			editor.revealRange( editor.selection );
 		}
 	} );
+}
+
+function _commandDeleteLine( editor : vscode.TextEditor, edit : vscode.TextEditorEdit )
+{
+	let minLine, maxLine;
+	
+	for( let selection of editor.selections ){
+		minLine	= selection.anchor.line;
+		maxLine	= selection.active.line;
+		
+		if( selection.isReversed ){
+			[ minLine, maxLine ]	= [maxLine, minLine ];
+		}
+		
+		const minPos = new vscode.Position( minLine, 0 );
+		
+		if( maxLine + 1 >= editor.document.lineCount ){
+			const lineText = editor.document.lineAt( maxLine );
+			edit.delete( new vscode.Range( minPos, new vscode.Position( maxLine, lineText.range.end.character ) ) );
+		}
+		else {
+			edit.delete( new vscode.Range( minPos, new vscode.Position( maxLine + 1, 0 ) ) );
+		}
+	}
 }
 
 const enum CharType {
@@ -225,35 +304,49 @@ function _findRightWordPosInEditor( editor: vscode.TextEditor, pos: vscode.Posit
 		let curType = _getCharTypeAt( lineText.text, chIdx );
 		if( !_checkSkipCursorMoveChar( curType ) ){
 			chIdx	= _skipRightCurrentWordType( lineText.text, chIdx );
+			
+			// 行末に来ていたらそこでストップ
+			if( chIdx === lineText.range.end.character ){
+				return new vscode.Position( lineIdx, chIdx );
+			}
 		}
 	}
 	
-	// 現在の文字が空白か改行なら全てスキップして次単語の先頭に移動
-	while( true ){
-		// 行末は次の行の先頭へ一旦移動
-		if( chIdx === lineText.range.end.character ){
-			// ファイル終端
-			if( lineIdx === lineCnt - 1 ){
-				break;
-			}
-			
-			++lineIdx;
-			lineText = editor.document.lineAt( lineIdx );
-			chIdx	= 0;
+	// 行末は次の行の先頭へ一旦移動
+	if( chIdx === lineText.range.end.character ){
+		// ファイル終端
+		if( lineIdx === lineCnt - 1 ){
+			return new vscode.Position( lineIdx, chIdx );
 		}
-		else {
-			let curType = _getCharTypeAt( lineText.text, chIdx );
-			if( _checkSkipCursorMoveChar( curType ) ){
-				chIdx	= _skipRightWhiteSpaceAndPunctuation( lineText.text, chIdx );
-			}
-			else {
-				break;
-			}
+		
+		++lineIdx;
+		lineText = editor.document.lineAt( lineIdx );
+		chIdx	= 0;
+	}
+	
+	// 現在の文字が空白を飛ばして次単語の先頭に移動
+	{
+		let curType = _getCharTypeAt( lineText.text, chIdx );
+		if( _checkSkipCursorMoveChar( curType ) ){
+			chIdx	= _skipRightWhiteSpaceAndPunctuation( lineText.text, chIdx );
 		}
 	}
 	
 	if( isWordEnd && chIdx < lineText.range.end.character ){
 		chIdx	= _skipRightCurrentWordType( lineText.text, chIdx );
+	}
+	
+	return new vscode.Position( lineIdx, chIdx );
+}
+
+function _getPrevLineEndPos( editor: vscode.TextEditor, lineIdx: number ): vscode.Position
+{
+	let chIdx = 0;
+	
+	if( lineIdx > 0 ){
+		--lineIdx;
+		let lineText = editor.document.lineAt( lineIdx );
+		chIdx	= lineText.range.end.character;
 	}
 	
 	return new vscode.Position( lineIdx, chIdx );
@@ -273,26 +366,20 @@ function _findLeftWordPosInEditor( editor: vscode.TextEditor, pos: vscode.Positi
 		}
 	}
 	
-	// 直前の文字が空白か改行なら全てスキップして前単語の直後に移動
-	while( true ){
-		// 行頭は前の行の終端文字へ一旦移動
-		if( chIdx === 0 ){
-			// ファイル先端
-			if( lineIdx === 0 ){
-				break;
-			}
+	// 行頭は前の行の終端文字へ移動して抜ける
+	if( chIdx === 0 ){
+		return _getPrevLineEndPos( editor, lineIdx );
+	}
+	
+	// 直前の文字が空白なら飛ばして前単語の直後に移動
+	{
+		let prevType = _getCharTypeAt( lineText.text, chIdx - 1 );
+		if( _checkSkipCursorMoveChar( prevType ) ){
+			chIdx	= _skipLeftWhiteSpaceAndPunctuation( lineText.text, chIdx - 1 );
 			
-			--lineIdx;
-			lineText = editor.document.lineAt( lineIdx );
-			chIdx	= lineText.range.end.character;
-		}
-		else {
-			let prevType = _getCharTypeAt( lineText.text, chIdx - 1 );
-			if( _checkSkipCursorMoveChar( prevType ) ){
-				chIdx	= _skipLeftWhiteSpaceAndPunctuation( lineText.text, chIdx - 1 );
-			}
-			else {
-				break;
+			// 行頭に来てしまったら前の行の終に移動
+			if( chIdx === 0 ){
+				return _getPrevLineEndPos( editor, lineIdx );
 			}
 		}
 	}
