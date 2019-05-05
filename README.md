@@ -22,6 +22,7 @@
 * `marukeyex.deleteRightWord`: 単語のカーソル位置から右側を削除。
 * `marukeyex.copyWord`: カーソル位置の単語をコピー。
 * `marukeyex.enter`: ENTERキーの挙動を他のキーにバインドするコマンドが標準で存在しないので作った。
+* `marukeyex.deleteLine`: 行削除。ファイル終端行では行を空にするだけ。
 
 ## Known Issues
 
